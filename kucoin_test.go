@@ -9,6 +9,15 @@ const (
 	SecretKey = "YOUR_SECRET_KEY"
 )
 
+func TestGetSymbol(t *testing.T) {
+	k := New(APIKey, SecretKey)
+	if symbol, err := k.GetSymbol("ETH-USDT"); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%v", symbol.Datetime)
+	}
+}
+
 func TestGetBalance(t *testing.T) {
 	k := New(APIKey, SecretKey)
 	if bal, err := k.GetCoinBalance("BTC"); err != nil {

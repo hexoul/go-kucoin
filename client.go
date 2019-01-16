@@ -70,7 +70,7 @@ func (c client) dumpResponse(r *http.Response) {
 		  then combine them with & (don't urlencode them, don't add ?, don't add extra &),
 		  e.g. amount=10&price=1.1&type=BUY
 */
-func (c *client) do(method, resource string, payload map[string]string, authNeeded bool) ([]byte, error) {
+func (c *client) do(method, resource string, payload map[string]string, authNeeded bool, nonce int64) ([]byte, error) {
 	var req *http.Request
 
 	URL, err := url.Parse(kucoinURL)
@@ -113,7 +113,9 @@ func (c *client) do(method, resource string, payload map[string]string, authNeed
 			return nil, errors.New("API Key and API Secret must be set")
 		}
 
-		nonce := time.Now().UnixNano() / int64(time.Millisecond)
+		if nonce == 0 {
+			nonce = time.Now().UnixNano() / int64(time.Millisecond)
+		}
 		req.Header.Add("KC-API-KEY", c.apiKey)
 		req.Header.Add("KC-API-NONCE", fmt.Sprintf("%v", nonce))
 		req.Header.Add(

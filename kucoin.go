@@ -52,8 +52,10 @@ func doArgs(args ...string) map[string]string {
 func handleErr(r interface{}) error {
 	switch v := r.(type) {
 	case map[string]interface{}:
-		err := r.(map[string]interface{})["error"]
-		if err != nil {
+		if success := r.(map[string]interface{})["success"]; success != true {
+			errorMessage := r.(map[string]interface{})["msg"]
+			return errors.New(errorMessage.(string))
+		} else if err := r.(map[string]interface{})["error"]; err != nil {
 			switch v := err.(type) {
 			case map[string]interface{}:
 				errorMessage := err.(map[string]interface{})["message"]
@@ -83,7 +85,7 @@ func (b *Kucoin) SetDebug(enable bool) {
 
 // GetUserInfo is used to get the user information at Kucoin along with other meta data.
 func (b *Kucoin) GetUserInfo() (userInfo UserInfo, err error) {
-	r, err := b.client.do("GET", "user/info", nil, true)
+	r, err := b.client.do("GET", "user/info", nil, true, 0)
 	if err != nil {
 		return
 	}
@@ -102,7 +104,7 @@ func (b *Kucoin) GetUserInfo() (userInfo UserInfo, err error) {
 
 // GetSymbols is used to get the all open and available trading markets at Kucoin along with other meta data.
 func (b *Kucoin) GetSymbols() (symbols []Symbol, err error) {
-	r, err := b.client.do("GET", "market/open/symbols", nil, false)
+	r, err := b.client.do("GET", "market/open/symbols", nil, false, 0)
 	if err != nil {
 		return
 	}
@@ -134,7 +136,7 @@ func (b *Kucoin) GetUserSymbols(market, symbol, filter string) (symbols []Symbol
 	if len(filter) > 1 {
 		payload["filter"] = filter
 	}
-	r, err := b.client.do("GET", "market/symbols", payload, true)
+	r, err := b.client.do("GET", "market/symbols", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -155,7 +157,7 @@ func (b *Kucoin) GetUserSymbols(market, symbol, filter string) (symbols []Symbol
 // Trading symbol e.g. KCS-BTC. If not specified then you will get data of all symbols.
 func (b *Kucoin) GetSymbol(market string) (symbol Symbol, err error) {
 	r, err := b.client.do("GET",
-		"open/tick", doArgs("symbol", strings.ToUpper(market)), false,
+		"open/tick", doArgs("symbol", strings.ToUpper(market)), false, 0,
 	)
 	if err != nil {
 		return
@@ -175,7 +177,7 @@ func (b *Kucoin) GetSymbol(market string) (symbol Symbol, err error) {
 
 // GetCoins is used to get the all open and available trading coins at Kucoin along with other meta data.
 func (b *Kucoin) GetCoins() (coins []Coin, err error) {
-	r, err := b.client.do("GET", "market/open/coins", nil, false)
+	r, err := b.client.do("GET", "market/open/coins", nil, false, 0)
 	if err != nil {
 		return
 	}
@@ -195,7 +197,7 @@ func (b *Kucoin) GetCoins() (coins []Coin, err error) {
 // GetCoin is used to get the open and available trading coin at Kucoin along with other meta data.
 func (b *Kucoin) GetCoin(c string) (coin Coin, err error) {
 	r, err := b.client.do(
-		"GET", "market/open/coin-info", doArgs("coin", strings.ToUpper(c)), false,
+		"GET", "market/open/coin-info", doArgs("coin", strings.ToUpper(c)), false, 0,
 	)
 	if err != nil {
 		return
@@ -215,7 +217,11 @@ func (b *Kucoin) GetCoin(c string) (coin Coin, err error) {
 
 // GetCoinBalance is used to get the balance at chosen coin at Kucoin along with other meta data.
 func (b *Kucoin) GetCoinBalance(c string) (coinBalance CoinBalance, err error) {
-	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true)
+	symbol, err := b.GetSymbol("ETH-USDT")
+	if err != nil {
+		return
+	}
+	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true, symbol.Datetime)
 	if err != nil {
 		return
 	}
@@ -234,7 +240,7 @@ func (b *Kucoin) GetCoinBalance(c string) (coinBalance CoinBalance, err error) {
 
 // GetCoinDepositAddress is used to get the address at chosen coin at Kucoin along with other meta data.
 func (b *Kucoin) GetCoinDepositAddress(c string) (coinDepositAddress CoinDepositAddress, err error) {
-	r, err := b.client.do("GET", fmt.Sprintf("account/%s/wallet/address", strings.ToUpper(c)), nil, true)
+	r, err := b.client.do("GET", fmt.Sprintf("account/%s/wallet/address", strings.ToUpper(c)), nil, true, 0)
 	if err != nil {
 		return
 	}
@@ -264,7 +270,7 @@ func (b *Kucoin) ListActiveMapOrders(symbol string, side string) (activeMapOrder
 		payload["side"] = strings.ToUpper(side)
 	}
 
-	r, err := b.client.do("GET", "order/active-map", payload, true)
+	r, err := b.client.do("GET", "order/active-map", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -294,7 +300,7 @@ func (b *Kucoin) ListActiveOrders(symbol string, side string) (activeOrders Acti
 		payload["side"] = strings.ToUpper(side)
 	}
 
-	r, err := b.client.do("GET", "order/active", payload, true)
+	r, err := b.client.do("GET", "order/active", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -328,7 +334,7 @@ func (b *Kucoin) OrdersBook(symbol string, group, limit int) (ordersBook OrdersB
 		payload["limit"] = fmt.Sprintf("%v", limit)
 	}
 
-	r, err := b.client.do("GET", "open/orders", payload, true)
+	r, err := b.client.do("GET", "open/orders", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -352,7 +358,7 @@ func (b *Kucoin) CreateOrder(symbol, side string, price, amount float64) (orderO
 	payload["price"] = strconv.FormatFloat(price, 'f', 8, 64)
 	payload["type"] = strings.ToUpper(side)
 
-	r, err := b.client.do("POST", fmt.Sprintf("%s/order", strings.ToUpper(symbol)), payload, true)
+	r, err := b.client.do("POST", fmt.Sprintf("%s/order", strings.ToUpper(symbol)), payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -384,7 +390,7 @@ func (b *Kucoin) CreateOrderByString(symbol, side, price, amount string) (orderO
 	payload["price"] = price
 	payload["type"] = strings.ToUpper(side)
 
-	r, err := b.client.do("POST", fmt.Sprintf("%s/order", strings.ToUpper(symbol)), payload, true)
+	r, err := b.client.do("POST", fmt.Sprintf("%s/order", strings.ToUpper(symbol)), payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -432,7 +438,7 @@ func (b *Kucoin) AccountHistory(coin, side, status string, limit, page int) (acc
 	}
 
 	r, err := b.client.do("GET", fmt.Sprintf(
-		"account/%s/wallet/records", strings.ToUpper(coin)), payload, true)
+		"account/%s/wallet/records", strings.ToUpper(coin)), payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -470,7 +476,7 @@ func (b *Kucoin) ListSpecificDealtOrders(symbol, side string, limit, page int) (
 		payload["page"] = fmt.Sprintf("%v", page)
 	}
 
-	r, err := b.client.do("GET", "deal-orders", payload, true)
+	r, err := b.client.do("GET", "deal-orders", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -515,7 +521,7 @@ func (b *Kucoin) ListMergedDealtOrders(symbol, side string, limit, page int, sin
 		payload["before"] = fmt.Sprintf("%v", before)
 	}
 
-	r, err := b.client.do("GET", "order/dealt", payload, true)
+	r, err := b.client.do("GET", "order/dealt", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -557,7 +563,7 @@ func (b *Kucoin) OrderDetails(symbol, side, orderOid string, limit, page int) (o
 		payload["page"] = fmt.Sprintf("%v", page)
 	}
 
-	r, err := b.client.do("GET", "order/detail", payload, true)
+	r, err := b.client.do("GET", "order/detail", payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -593,7 +599,7 @@ func (b *Kucoin) CreateWithdrawalApply(coin, address string, amount float64) (wi
 	payload["amount"] = fmt.Sprintf("%v", amount)
 
 	r, err := b.client.do("POST", fmt.Sprintf(
-		"account/%s/withdraw/apply", strings.ToUpper(coin)), payload, true)
+		"account/%s/withdraw/apply", strings.ToUpper(coin)), payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -626,7 +632,7 @@ func (b *Kucoin) CancelWithdrawal(coin, txOid string) (withdrawal Withdrawal, er
 	payload["txOid"] = txOid
 
 	r, err := b.client.do("POST", fmt.Sprintf(
-		"account/%s/withdraw/cancel", strings.ToUpper(coin)), payload, true)
+		"account/%s/withdraw/cancel", strings.ToUpper(coin)), payload, true, 0)
 	if err != nil {
 		return
 	}
@@ -653,7 +659,7 @@ func (b *Kucoin) CancelOrder(orderOid, side, symbol string) error {
 	payload["orderOid"] = orderOid
 	payload["type"] = side
 
-	r, err := b.client.do("POST", fmt.Sprintf("%s/cancel-order", strings.ToUpper(symbol)), payload, true)
+	r, err := b.client.do("POST", fmt.Sprintf("%s/cancel-order", strings.ToUpper(symbol)), payload, true, 0)
 	if err != nil {
 		return err
 	}
@@ -675,7 +681,7 @@ func (b *Kucoin) CancelAllOrders(symbol, side string) error {
 		payload["type"] = side
 	}
 
-	r, err := b.client.do("POST", "order/cancel-all", payload, true)
+	r, err := b.client.do("POST", "order/cancel-all", payload, true, 0)
 	if err != nil {
 		return err
 	}
