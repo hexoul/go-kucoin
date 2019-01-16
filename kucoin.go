@@ -217,11 +217,11 @@ func (b *Kucoin) GetCoin(c string) (coin Coin, err error) {
 
 // GetCoinBalance is used to get the balance at chosen coin at Kucoin along with other meta data.
 func (b *Kucoin) GetCoinBalance(c string) (coinBalance CoinBalance, err error) {
-	symbol, err := b.GetSymbol("ETH-USDT")
+	ref, err := b.GetSymbol("ETH-USDT")
 	if err != nil {
 		return
 	}
-	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true, symbol.Datetime)
+	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true, ref.Datetime)
 	if err != nil {
 		return
 	}
@@ -521,7 +521,11 @@ func (b *Kucoin) ListMergedDealtOrders(symbol, side string, limit, page int, sin
 		payload["before"] = fmt.Sprintf("%v", before)
 	}
 
-	r, err := b.client.do("GET", "order/dealt", payload, true, 0)
+	ref, err := b.GetSymbol("ETH-USDT")
+	if err != nil {
+		return
+	}
+	r, err := b.client.do("GET", "order/dealt", payload, true, ref.Datetime)
 	if err != nil {
 		return
 	}

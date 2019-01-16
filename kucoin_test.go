@@ -26,3 +26,12 @@ func TestGetBalance(t *testing.T) {
 		t.Logf("%f %f", bal.FreezeBalance, bal.Balance)
 	}
 }
+
+func TestListMergedDealtOrders(t *testing.T) {
+	k := New(APIKey, SecretKey)
+	if ret, err := k.ListMergedDealtOrders("ETH-USDT", "BUY", 20, 1, 0, 0); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%d", len(ret.Datas))
+	}
+}
