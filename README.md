@@ -23,17 +23,17 @@ func main() {
 
 | API Resource | Type | Done  |
 | -------------| ----- | ----- |
-| Tick (symbols) | Open | - |
-| Get coin info | Open | - |
-| List coins | Open | - |
+| Tick (symbols) | Open | ✔ |
+| Get coin info | Open | ✔ |
+| List coins | Open | ✔ |
 | Tick (symbols) for logged user | Auth | - |
 | Get coin deposit address | Auth | - |
-| Get balance of coin | Auth | - |
+| Get balance of coin | Auth | ✔ |
 | Create an order | Auth | - |
 | Get user info | Auth | - |
 | List active orders (Both map and array) | Auth | - |
 | List deposit & withdrawal records | Auth | - |
-| List dealt orders (Both Specific and Merged) | Auth | - |
+| List dealt orders (Both Specific and Merged) | Auth | ✔ |
 | Order details | Auth | - |
 | Create withdrawal apply | Auth | - |
 | Cancel withdrawal | Auth | - |
