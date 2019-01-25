@@ -14,7 +14,7 @@ func main() {
 	// Set your own API key, secret and passphrase
 	k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
 	// Call resource
-	k.GetCoinBalance("BTC")
+	k.ListAccounts("", "")
 }
 ```
 
@@ -34,12 +34,13 @@ func main() {
 
 ## Features
 
-| API Resource | Type | Done  |
-| -------------| ----- | ----- |
-| Time | Open | ✔ |
-| Ticker | Open | ✔ |
-| List accounts | Auth | ✔ |
-| Deposit list | Auth | ✔ |
+| Category | API Resource | Type | Done |
+| ---------| ------------ | ---- | ---- |
+| User | List accounts | Auth | ✔ |
+| User | Get holds | Auth | ✔ |
+| User | Deposit list | Auth | ✔ |
+| Market Data | Ticker | Open | ✔ |
+| Others | Time | Open | ✔ |
 
 ## Reference
 - [Kucoin API](https://docs.kucoin.com/)

@@ -120,6 +120,5 @@ func (c *client) sign(method, resource, queryString string, nonce int64) (signat
 		queryString = "?" + queryString
 	}
 	strForSign := fmt.Sprintf("%v%s%s%s", nonce, method, resource, queryString)
-	fmt.Println(strForSign)
 	return b64.StdEncoding.EncodeToString(computeHmac256(strForSign, c.bSecret))
 }

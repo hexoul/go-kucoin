@@ -7,7 +7,7 @@ import (
 
 // GetDepositList get deposit page list.
 // docs: https://docs.kucoin.com/#get-deposit-address
-func (b *Kucoin) GetDepositList(currency, status string) (depositList DepositList, err error) {
+func (b *Kucoin) GetDepositList(currency, status string) (deposits []Deposit, err error) {
 	timestamp, err := b.Time()
 	if err != nil {
 		return
@@ -32,19 +32,6 @@ func (b *Kucoin) GetDepositList(currency, status string) (depositList DepositLis
 	}
 	var rawRes rawDepositList
 	err = json.Unmarshal(r, &rawRes)
-	depositList = rawRes.Data
+	deposits = rawRes.Data.Items
 	return
-}
-
-// DepositList struct
-type DepositList struct {
-	CurrentPage int                      `json:"currentPage"`
-	PageSize    int                      `json:"pageSize"`
-	TotalNum    int                      `json:"totalNum"`
-	TotalPage   int                      `json:"totalPage"`
-	Items       []map[string]interface{} `json:"items"`
-}
-
-type rawDepositList struct {
-	Data DepositList `json:"data"`
 }
