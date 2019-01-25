@@ -6,7 +6,7 @@ import (
 )
 
 func TestListAccounts(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
+	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
 	if accounts, err := k.ListAccounts("", ""); err != nil {
 		t.Fatal(err)
 	} else {
@@ -19,7 +19,7 @@ func TestListAccounts(t *testing.T) {
 }
 
 func TestGetHolds(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
+	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
 	if holds, err := k.GetHolds("5c45748cef83c7101c066906"); err != nil {
 		t.Fatal(err)
 	} else {

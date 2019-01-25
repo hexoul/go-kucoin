@@ -7,8 +7,8 @@ import (
 
 // GetDepositList get deposit page list.
 // docs: https://docs.kucoin.com/#get-deposit-address
-func (b *Kucoin) GetDepositList(currency, status string) (deposits []Deposit, err error) {
-	timestamp, err := b.Time()
+func (c *Client) GetDepositList(currency, status string) (deposits []Deposit, err error) {
+	timestamp, err := c.Time()
 	if err != nil {
 		return
 	}
@@ -19,7 +19,7 @@ func (b *Kucoin) GetDepositList(currency, status string) (deposits []Deposit, er
 	if status == "PROCESSING" || status == "SUCCESS" || status == "FAILURE" {
 		payload["status"] = status
 	}
-	r, err := b.client.do("GET", "/api/v1/deposits", payload, true, timestamp)
+	r, err := c.do("GET", "/api/v1/deposits", payload, true, timestamp)
 	if err != nil {
 		return
 	}

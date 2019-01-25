@@ -11,7 +11,7 @@ const (
 )
 
 func TestTime(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
+	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
 	if timestamp, err := k.Time(); err != nil {
 		t.Fatal(err)
 	} else {
@@ -20,7 +20,7 @@ func TestTime(t *testing.T) {
 }
 
 func TestGetTicker(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
+	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
 	if ticker, err := k.GetTicker("ETH-BTC"); err != nil {
 		t.Fatal(err)
 	} else {

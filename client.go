@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	b64 "encoding/base64"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,23 +13,19 @@ import (
 	"time"
 )
 
-type client struct {
-	apiKey     string
-	apiSecret  string
-	passPhrase string
-	bSecret    []byte
-	httpClient http.Client
-	debug      bool
-}
-
-func newClient(apiKey, apiSecret, passPhrase string) (c *client) {
-	c = &client{
-		apiKey:     apiKey,
-		apiSecret:  apiSecret,
-		passPhrase: passPhrase,
-		bSecret:    []byte(apiSecret),
+func doReq(req *http.Request) (body []byte, err error) {
+	requestTimeout := time.Duration(5 * time.Second)
+	client := &http.Client{
+		Timeout: requestTimeout,
 	}
-	c.httpClient.Timeout = time.Second * 30
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if body, err = ioutil.ReadAll(resp.Body); err != nil {
+		return nil, err
+	}
 	return
 }
 
@@ -45,7 +40,7 @@ func newClient(apiKey, apiSecret, passPhrase string) (c *client) {
 		  then combine them with & (don't urlencode them, don't add ?, don't add extra &),
 		  e.g. amount=10&price=1.1&type=BUY
 */
-func (c *client) do(method, resource string, payload map[string]string, authNeeded bool, nonce int64) ([]byte, error) {
+func (c *Client) do(method, resource string, payload map[string]string, authNeeded bool, nonce int64) ([]byte, error) {
 	var req *http.Request
 
 	URL, err := url.Parse(kucoinURL)
@@ -81,32 +76,16 @@ func (c *client) do(method, resource string, payload map[string]string, authNeed
 
 	// Auth
 	if authNeeded {
-		if len(c.apiKey) == 0 || len(c.apiSecret) == 0 || len(c.passPhrase) == 0 {
-			return nil, errors.New("API Key, API Secret and Passphrase must be set")
-		}
 		if nonce == 0 {
 			nonce = time.Now().UnixNano() / int64(time.Millisecond)
 		}
-		req.Header.Add("KC-API-KEY", c.apiKey)
-		req.Header.Add("KC-API-PASSPHRASE", c.passPhrase)
+		req.Header.Add("KC-API-KEY", c.accessKey)
+		req.Header.Add("KC-API-PASSPHRASE", c.passphrase)
 		req.Header.Add("KC-API-TIMESTAMP", fmt.Sprintf("%v", nonce))
 		req.Header.Add("KC-API-SIGN", c.sign(method, resource, queryString, nonce))
 	}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != 200 {
-		err = errors.New(resp.Status)
-	}
-	return data, err
+	return doReq(req)
 }
 
 func computeHmac256(message string, secret []byte) []byte {
@@ -115,7 +94,7 @@ func computeHmac256(message string, secret []byte) []byte {
 	return h.Sum(nil)
 }
 
-func (c *client) sign(method, resource, queryString string, nonce int64) (signature string) {
+func (c *Client) sign(method, resource, queryString string, nonce int64) (signature string) {
 	if queryString != "" {
 		queryString = "?" + queryString
 	}

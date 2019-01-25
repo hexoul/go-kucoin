@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"os"
 	"strings"
-	"time"
+	"sync"
 )
 
 const (
@@ -19,24 +19,67 @@ const (
 	kucoinURL = "https://openapi-sandbox.kucoin.com"
 )
 
-// New returns an instantiated Kucoin struct.
-func New(apiKey, apiSecret, passphrase string) *Kucoin {
-	client := newClient(apiKey, apiSecret, passphrase)
-	return &Kucoin{client}
+// Client struct
+type Client struct {
+	accessKey  string
+	secretKey  string
+	passphrase string
+	bSecret    []byte
 }
 
-// NewCustomClient returns an instantiated Kucoin struct with custom http client.
-func NewCustomClient(apiKey, apiSecret, passphrase string, httpClient http.Client) *Kucoin {
-	client := newClient(apiKey, apiSecret, passphrase)
-	client.httpClient = httpClient
-	return &Kucoin{client}
+var (
+	instance   *Client
+	once       sync.Once
+	accessKey  string
+	secretKey  string
+	passphrase string
+)
+
+func init() {
+	for _, val := range os.Args {
+		arg := strings.Split(val, "=")
+		if len(arg) < 2 {
+			continue
+		} else if arg[0] == "-kucoin:accesskey" {
+			accessKey = arg[1]
+		} else if arg[0] == "-kucoin:secretkey" {
+			secretKey = arg[1]
+		} else if arg[0] == "-kucoin:passphrase" {
+			passphrase = arg[1]
+		}
+	}
 }
 
-// NewCustomTimeout returns an instantiated Kucoin struct with custom timeout.
-func NewCustomTimeout(apiKey, apiSecret, passphrase string, timeout time.Duration) *Kucoin {
-	client := newClient(apiKey, apiSecret, passphrase)
-	client.httpClient.Timeout = timeout
-	return &Kucoin{client}
+// GetInstance returns singleton
+func GetInstance() *Client {
+	once.Do(func() {
+		if accessKey == "" || secretKey == "" || passphrase == "" {
+			panic("KEYS FOR BOTH ACCESS AND SECRET AND PASSPHRASE REQUIRED")
+		}
+		instance = &Client{
+			accessKey:  accessKey,
+			secretKey:  secretKey,
+			passphrase: passphrase,
+			bSecret:    []byte(secretKey),
+		}
+	})
+	return instance
+}
+
+// GetInstanceWithKey returns singleton
+func GetInstanceWithKey(accessKey, secretKey, passphrase string) *Client {
+	once.Do(func() {
+		if accessKey == "" || secretKey == "" || passphrase == "" {
+			panic("KEYS FOR BOTH ACCESS AND SECRET REQUIRED")
+		}
+		instance = &Client{
+			accessKey:  accessKey,
+			secretKey:  secretKey,
+			passphrase: passphrase,
+			bSecret:    []byte(secretKey),
+		}
+	})
+	return instance
 }
 
 func doArgs(args ...string) map[string]string {
@@ -69,20 +112,10 @@ func handleErr(r interface{}) error {
 	return nil
 }
 
-// Kucoin represent a Kucoin client.
-type Kucoin struct {
-	client *client
-}
-
-// SetDebug enables/disables http request/response dump.
-func (b *Kucoin) SetDebug(enable bool) {
-	b.client.debug = enable
-}
-
 // Time get the API server time.
 // doc: https://docs.kucoin.com/#time
-func (b *Kucoin) Time() (timestamp int64, err error) {
-	r, err := b.client.do("GET", "/api/v1/timestamp", nil, false, 0)
+func (c *Client) Time() (timestamp int64, err error) {
+	r, err := c.do("GET", "/api/v1/timestamp", nil, false, 0)
 	if err != nil {
 		return
 	}
@@ -100,8 +133,8 @@ func (b *Kucoin) Time() (timestamp int64, err error) {
 
 // GetTicker include only the inside (i.e. best) bid and ask data , last price and last trade size.
 // docs: https://docs.kucoin.com/#get-ticker
-func (b *Kucoin) GetTicker(symbol string) (ticker Ticker, err error) {
-	r, err := b.client.do("GET", "/api/v1/market/orderbook/level1", doArgs("symbol", strings.ToUpper(symbol)), false, 0)
+func (c *Client) GetTicker(symbol string) (ticker Ticker, err error) {
+	r, err := c.do("GET", "/api/v1/market/orderbook/level1", doArgs("symbol", strings.ToUpper(symbol)), false, 0)
 	if err != nil {
 		return
 	}
