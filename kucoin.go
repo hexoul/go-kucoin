@@ -12,25 +12,30 @@ import (
 )
 
 const (
-	kucoinURL = "https://api.kucoin.com/v1/"
+	// v1
+	// kucoinURL = "https://api.kucoin.com/v1/"
+	// v2
+	// kucoinURL = "https://openapi-v2.kucoin.com/api/v1/"
+	// sandbox
+	kucoinURL = "https://openapi-sandbox.kucoin.com/api/v1/"
 )
 
 // New returns an instantiated Kucoin struct.
-func New(apiKey, apiSecret string) *Kucoin {
-	client := newClient(apiKey, apiSecret)
+func New(apiKey, apiSecret, passphrase string) *Kucoin {
+	client := newClient(apiKey, apiSecret, passphrase)
 	return &Kucoin{client}
 }
 
 // NewCustomClient returns an instantiated Kucoin struct with custom http client.
-func NewCustomClient(apiKey, apiSecret string, httpClient http.Client) *Kucoin {
-	client := newClient(apiKey, apiSecret)
+func NewCustomClient(apiKey, apiSecret, passphrase string, httpClient http.Client) *Kucoin {
+	client := newClient(apiKey, apiSecret, passphrase)
 	client.httpClient = httpClient
 	return &Kucoin{client}
 }
 
 // NewCustomTimeout returns an instantiated Kucoin struct with custom timeout.
-func NewCustomTimeout(apiKey, apiSecret string, timeout time.Duration) *Kucoin {
-	client := newClient(apiKey, apiSecret)
+func NewCustomTimeout(apiKey, apiSecret, passphrase string, timeout time.Duration) *Kucoin {
+	client := newClient(apiKey, apiSecret, passphrase)
 	client.httpClient.Timeout = timeout
 	return &Kucoin{client}
 }
@@ -52,17 +57,9 @@ func doArgs(args ...string) map[string]string {
 func handleErr(r interface{}) error {
 	switch v := r.(type) {
 	case map[string]interface{}:
-		if success := r.(map[string]interface{})["success"]; success != true {
+		if code := r.(map[string]interface{})["code"]; code != "200000" {
 			errorMessage := r.(map[string]interface{})["msg"]
 			return errors.New(errorMessage.(string))
-		} else if err := r.(map[string]interface{})["error"]; err != nil {
-			switch v := err.(type) {
-			case map[string]interface{}:
-				errorMessage := err.(map[string]interface{})["message"]
-				return errors.New(errorMessage.(string))
-			default:
-				return fmt.Errorf("don't recognized type %T", v)
-			}
 		}
 	case []interface{}:
 		return nil
@@ -83,9 +80,10 @@ func (b *Kucoin) SetDebug(enable bool) {
 	b.client.debug = enable
 }
 
-// GetUserInfo is used to get the user information at Kucoin along with other meta data.
-func (b *Kucoin) GetUserInfo() (userInfo UserInfo, err error) {
-	r, err := b.client.do("GET", "user/info", nil, true, 0)
+// Time get the API server time.
+// doc: https://docs.kucoin.com/#time
+func (b *Kucoin) Time() (timestamp int64, err error) {
+	r, err := b.client.do("GET", "timestamp", nil, false, 0)
 	if err != nil {
 		return
 	}
@@ -96,15 +94,15 @@ func (b *Kucoin) GetUserInfo() (userInfo UserInfo, err error) {
 	if err = handleErr(response); err != nil {
 		return
 	}
-	var rawRes rawUserInfo
-	err = json.Unmarshal(r, &rawRes)
-	userInfo = rawRes.Data
+	data := response.(map[string]interface{})["data"].(float64)
+	timestamp = int64(data)
 	return
 }
 
-// GetSymbols is used to get the all open and available trading markets at Kucoin along with other meta data.
-func (b *Kucoin) GetSymbols() (symbols []Symbol, err error) {
-	r, err := b.client.do("GET", "market/open/symbols", nil, false, 0)
+// GetTicker include only the inside (i.e. best) bid and ask data , last price and last trade size.
+// docs: https://docs.kucoin.com/#get-ticker
+func (b *Kucoin) GetTicker(symbol string) (ticker Ticker, err error) {
+	r, err := b.client.do("GET", "market/orderbook/level1", doArgs("symbol", strings.ToUpper(symbol)), false, 0)
 	if err != nil {
 		return
 	}
@@ -115,28 +113,27 @@ func (b *Kucoin) GetSymbols() (symbols []Symbol, err error) {
 	if err = handleErr(response); err != nil {
 		return
 	}
-	var rawRes rawSymbols
+	var rawRes rawTicker
 	err = json.Unmarshal(r, &rawRes)
-	symbols = rawRes.Data
+	ticker = rawRes.Data
 	return
 }
 
-// GetUserSymbols is used to get the all open and available trading markets at Kucoin along with other meta data.
-// The user should be logged to call this method.
-// Filter parameter can be whether 'FAVOURITE' or 'STICK',
-// market and symbol parameters can be any as presented at exchange.
-func (b *Kucoin) GetUserSymbols(market, symbol, filter string) (symbols []Symbol, err error) {
-	payload := map[string]string{}
-	if len(market) > 1 {
-		payload["market"] = market
+// ListAccounts get a list of accounts.
+// doc: https://docs.kucoin.com/#list-accounts
+func (b *Kucoin) ListAccounts(currency, accountType string) (ret []Account, err error) {
+	timestamp, err := b.Time()
+	if err != nil {
+		return
 	}
-	if len(symbol) > 1 {
-		payload["symbol"] = symbol
+	payload := make(map[string]string)
+	if currency != "" {
+		payload["currency"] = strings.ToUpper(currency)
 	}
-	if len(filter) > 1 {
-		payload["filter"] = filter
+	if accountType == "main" || accountType == "trade" {
+		payload["type"] = accountType
 	}
-	r, err := b.client.do("GET", "market/symbols", payload, true, 0)
+	r, err := b.client.do("GET", "accounts", payload, true, timestamp)
 	if err != nil {
 		return
 	}
@@ -147,18 +144,27 @@ func (b *Kucoin) GetUserSymbols(market, symbol, filter string) (symbols []Symbol
 	if err = handleErr(response); err != nil {
 		return
 	}
-	var rawRes rawSymbols
-	err = json.Unmarshal(r, &rawRes)
-	symbols = rawRes.Data
+	var accounts Accounts
+	err = json.Unmarshal(r, &accounts)
+	ret = accounts.Data
 	return
 }
 
-// GetSymbol is used to get the open and available trading market at Kucoin along with other meta data.
-// Trading symbol e.g. KCS-BTC. If not specified then you will get data of all symbols.
-func (b *Kucoin) GetSymbol(market string) (symbol Symbol, err error) {
-	r, err := b.client.do("GET",
-		"open/tick", doArgs("symbol", strings.ToUpper(market)), false, 0,
-	)
+// GetDepositList get deposit page list.
+// docs: https://docs.kucoin.com/#get-deposit-address
+func (b *Kucoin) GetDepositList(currency, status string) (depositList DepositList, err error) {
+	timestamp, err := b.Time()
+	if err != nil {
+		return
+	}
+	payload := make(map[string]string)
+	if currency != "" {
+		payload["currency"] = strings.ToUpper(currency)
+	}
+	if status == "PROCESSING" || status == "SUCCESS" || status == "FAILURE" {
+		payload["status"] = status
+	}
+	r, err := b.client.do("GET", "deposits", payload, true, timestamp)
 	if err != nil {
 		return
 	}
@@ -169,11 +175,13 @@ func (b *Kucoin) GetSymbol(market string) (symbol Symbol, err error) {
 	if err = handleErr(response); err != nil {
 		return
 	}
-	var rawRes rawSymbol
+	var rawRes rawDepositList
 	err = json.Unmarshal(r, &rawRes)
-	symbol = rawRes.Data
+	depositList = rawRes.Data
 	return
 }
+
+//----------------------- WILL BE DEPRECATED BELOW ---------------------------//
 
 // GetCoins is used to get the all open and available trading coins at Kucoin along with other meta data.
 func (b *Kucoin) GetCoins() (coins []Coin, err error) {
@@ -217,11 +225,11 @@ func (b *Kucoin) GetCoin(c string) (coin Coin, err error) {
 
 // GetCoinBalance is used to get the balance at chosen coin at Kucoin along with other meta data.
 func (b *Kucoin) GetCoinBalance(c string) (coinBalance CoinBalance, err error) {
-	ref, err := b.GetSymbol("ETH-USDT")
+	timestamp, err := b.Time()
 	if err != nil {
 		return
 	}
-	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true, ref.Datetime)
+	r, err := b.client.do("GET", fmt.Sprintf("account/%s/balance", strings.ToUpper(c)), nil, true, timestamp)
 	if err != nil {
 		return
 	}
@@ -235,25 +243,6 @@ func (b *Kucoin) GetCoinBalance(c string) (coinBalance CoinBalance, err error) {
 	var rawRes rawCoinBalance
 	err = json.Unmarshal(r, &rawRes)
 	coinBalance = rawRes.Data
-	return
-}
-
-// GetCoinDepositAddress is used to get the address at chosen coin at Kucoin along with other meta data.
-func (b *Kucoin) GetCoinDepositAddress(c string) (coinDepositAddress CoinDepositAddress, err error) {
-	r, err := b.client.do("GET", fmt.Sprintf("account/%s/wallet/address", strings.ToUpper(c)), nil, true, 0)
-	if err != nil {
-		return
-	}
-	var response interface{}
-	if err = json.Unmarshal(r, &response); err != nil {
-		return
-	}
-	if err = handleErr(response); err != nil {
-		return
-	}
-	var rawRes rawCoinDepositAddress
-	err = json.Unmarshal(r, &rawRes)
-	coinDepositAddress = rawRes.Data
 	return
 }
 
@@ -521,11 +510,11 @@ func (b *Kucoin) ListMergedDealtOrders(symbol, side string, limit, page int, sin
 		payload["before"] = fmt.Sprintf("%v", before)
 	}
 
-	ref, err := b.GetSymbol("ETH-USDT")
+	timestamp, err := b.Time()
 	if err != nil {
 		return
 	}
-	r, err := b.client.do("GET", "order/dealt", payload, true, ref.Datetime)
+	r, err := b.client.do("GET", "order/dealt", payload, true, timestamp)
 	if err != nil {
 		return
 	}

@@ -20,14 +20,16 @@ import (
 type client struct {
 	apiKey     string
 	apiSecret  string
+	passPhrase string
 	httpClient http.Client
 	debug      bool
 }
 
-func newClient(apiKey, apiSecret string) (c *client) {
+func newClient(apiKey, apiSecret, passPhrase string) (c *client) {
 	c = &client{
-		apiKey:    apiKey,
-		apiSecret: apiSecret,
+		apiKey:     apiKey,
+		apiSecret:  apiSecret,
+		passPhrase: passPhrase,
 	}
 	c.httpClient.Timeout = time.Second * 30
 	return
@@ -102,28 +104,31 @@ func (c *client) do(method, resource string, payload map[string]string, authNeed
 	if err != nil {
 		return nil, err
 	}
-	if method == "POST" || method == "PUT" {
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
-	}
+	// if method == "POST" || method == "PUT" {
+	// 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+	// } else if method == "GET" {
+	// 	req.Header.Add("Content-Type", "application/json")
+	// }
+	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 
 	// Auth
 	if authNeeded {
-		if len(c.apiKey) == 0 || len(c.apiSecret) == 0 {
-			return nil, errors.New("API Key and API Secret must be set")
+		if len(c.apiKey) == 0 || len(c.apiSecret) == 0 || len(c.passPhrase) == 0 {
+			return nil, errors.New("API Key, API Secret and Passphrase must be set")
 		}
-
 		if nonce == 0 {
 			nonce = time.Now().UnixNano() / int64(time.Millisecond)
 		}
 		req.Header.Add("KC-API-KEY", c.apiKey)
-		req.Header.Add("KC-API-NONCE", fmt.Sprintf("%v", nonce))
-		req.Header.Add(
-			"KC-API-SIGNATURE", c.sign(
-				URL.Path, queryString, nonce,
-			),
-		)
+		// req.Header.Add("KC-API-SECRET", c.apiSecret)
+		req.Header.Add("KC-API-PASSPHRASE", c.passPhrase)
+		req.Header.Add("KC-API-TIMESTAMP", fmt.Sprintf("%v", nonce))
+		// req.Header.Add("ENDPOINT", fmt.Sprintf("/api/v1/%s%s", resource, queryString))
+		// req.Header.Add("STRING-TO-SIGN", fmt.Sprintf("%v%s/api/v1/%s%s", nonce, method, resource, queryString))
+		req.Header.Add("KC-API-SIGN", c.sign(method, resource, queryString, nonce))
 	}
+	// fmt.Printf("%v\n", req.Header)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -148,9 +153,11 @@ func computeHmac256(message, secret string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (c *client) sign(path, queryString string, nonce int64) (signature string) {
-	strForSign := fmt.Sprintf("%s/%v/%s", path, nonce, queryString)
-	signatureStr := b64.StdEncoding.EncodeToString([]byte(strForSign))
-	signature = computeHmac256(signatureStr, c.apiSecret)
-	return
+func (c *client) sign(method, resource, queryString string, nonce int64) (signature string) {
+	if queryString != "" {
+		queryString = "?" + queryString
+	}
+	strForSign := fmt.Sprintf("%v%s/api/v1/%s%s", nonce, method, resource, queryString)
+	fmt.Println(strForSign)
+	return b64.StdEncoding.EncodeToString([]byte(computeHmac256(strForSign, c.apiSecret)))
 }
