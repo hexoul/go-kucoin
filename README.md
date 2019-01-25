@@ -6,19 +6,31 @@
 ## Usage
 
 ```golang
-package main
-
 import (
 	"github.com/hexoul/go-kucoin"
 )
 
 func main() {
-	// Set your own API key and secret
-	k := kucoin.New("API_KEY", "API_SECRET")
+	// Set your own API key, secret and passphrase
+	k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
 	// Call resource
 	k.GetCoinBalance("BTC")
 }
 ```
+
+## Test
+
+1. Fill your information in `kucoin_test.go`
+
+  ```golang
+  const (
+    APIKey     = "YOUR_API_KEY"
+    SecretKey  = "YOUR_SECRET_KEY"
+	Passphrase = "YOUR_PASSPHRASE"
+  )
+  ```
+
+2. ```go test -v```
 
 ## Features
 
@@ -26,8 +38,8 @@ func main() {
 | -------------| ----- | ----- |
 | Time | Open | ✔ |
 | Ticker | Open | ✔ |
-| List accounts | Auth | - |
-| Deposit list | Auth | - |
+| List accounts | Auth | ✔ |
+| Deposit list | Auth | ✔ |
 
 ## Reference
-- [Kucoin API](https://kucoinapidocs.docs.apiary.io/)
+- [Kucoin API](https://docs.kucoin.com/)

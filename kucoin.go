@@ -15,9 +15,9 @@ const (
 	// v1
 	// kucoinURL = "https://api.kucoin.com/v1/"
 	// v2
-	// kucoinURL = "https://openapi-v2.kucoin.com/api/v1/"
+	// kucoinURL = "https://openapi-v2.kucoin.com"
 	// sandbox
-	kucoinURL = "https://openapi-sandbox.kucoin.com/api/v1/"
+	kucoinURL = "https://openapi-sandbox.kucoin.com"
 )
 
 // New returns an instantiated Kucoin struct.
@@ -57,7 +57,7 @@ func doArgs(args ...string) map[string]string {
 func handleErr(r interface{}) error {
 	switch v := r.(type) {
 	case map[string]interface{}:
-		if code := r.(map[string]interface{})["code"]; code != "200000" {
+		if code := r.(map[string]interface{})["code"]; code != "200" && code != "200000" {
 			errorMessage := r.(map[string]interface{})["msg"]
 			return errors.New(errorMessage.(string))
 		}
@@ -116,68 +116,6 @@ func (b *Kucoin) GetTicker(symbol string) (ticker Ticker, err error) {
 	var rawRes rawTicker
 	err = json.Unmarshal(r, &rawRes)
 	ticker = rawRes.Data
-	return
-}
-
-// ListAccounts get a list of accounts.
-// doc: https://docs.kucoin.com/#list-accounts
-func (b *Kucoin) ListAccounts(currency, accountType string) (ret []Account, err error) {
-	timestamp, err := b.Time()
-	if err != nil {
-		return
-	}
-	payload := make(map[string]string)
-	if currency != "" {
-		payload["currency"] = strings.ToUpper(currency)
-	}
-	if accountType == "main" || accountType == "trade" {
-		payload["type"] = accountType
-	}
-	r, err := b.client.do("GET", "accounts", payload, true, timestamp)
-	if err != nil {
-		return
-	}
-	var response interface{}
-	if err = json.Unmarshal(r, &response); err != nil {
-		return
-	}
-	if err = handleErr(response); err != nil {
-		return
-	}
-	var accounts Accounts
-	err = json.Unmarshal(r, &accounts)
-	ret = accounts.Data
-	return
-}
-
-// GetDepositList get deposit page list.
-// docs: https://docs.kucoin.com/#get-deposit-address
-func (b *Kucoin) GetDepositList(currency, status string) (depositList DepositList, err error) {
-	timestamp, err := b.Time()
-	if err != nil {
-		return
-	}
-	payload := make(map[string]string)
-	if currency != "" {
-		payload["currency"] = strings.ToUpper(currency)
-	}
-	if status == "PROCESSING" || status == "SUCCESS" || status == "FAILURE" {
-		payload["status"] = status
-	}
-	r, err := b.client.do("GET", "deposits", payload, true, timestamp)
-	if err != nil {
-		return
-	}
-	var response interface{}
-	if err = json.Unmarshal(r, &response); err != nil {
-		return
-	}
-	if err = handleErr(response); err != nil {
-		return
-	}
-	var rawRes rawDepositList
-	err = json.Unmarshal(r, &rawRes)
-	depositList = rawRes.Data
 	return
 }
 

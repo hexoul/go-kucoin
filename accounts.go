@@ -1,19 +1,57 @@
 package kucoin
 
+import (
+	"encoding/json"
+	"strings"
+)
+
+// ListAccounts get a list of accounts.
+// doc: https://docs.kucoin.com/#list-accounts
+func (b *Kucoin) ListAccounts(currency, accountType string) (ret []Account, err error) {
+	timestamp, err := b.Time()
+	if err != nil {
+		return
+	}
+	payload := make(map[string]string)
+	if currency != "" {
+		payload["currency"] = strings.ToUpper(currency)
+	}
+	if accountType == "main" || accountType == "trade" {
+		payload["type"] = accountType
+	}
+	r, err := b.client.do("GET", "/api/v1/accounts", payload, true, timestamp)
+	if err != nil {
+		return
+	}
+	var response interface{}
+	if err = json.Unmarshal(r, &response); err != nil {
+		return
+	}
+	if err = handleErr(response); err != nil {
+		return
+	}
+	var accounts Accounts
+	err = json.Unmarshal(r, &accounts)
+	ret = accounts.Data
+	return
+}
+
 // Account struct
 type Account struct {
-	ID        string  `json:"id"`
-	Currency  string  `json:"currency"`
-	Type      string  `json:"type"`
-	Balance   float64 `json:"balance"`
-	Available float64 `json:"available"`
-	Holds     float64 `json:"holds"`
+	ID        string `json:"id"`
+	Currency  string `json:"currency"`
+	Type      string `json:"type"`
+	Balance   string `json:"balance"`
+	Available string `json:"available"`
+	Holds     string `json:"holds"`
 }
 
 // Accounts struct
 type Accounts struct {
-	Data []Account
+	Data []Account `json:"data"`
 }
+
+//----------------------- WILL BE DEPRECATED BELOW ---------------------------//
 
 // UserInfo struct represents kucoin data model.
 type UserInfo struct {

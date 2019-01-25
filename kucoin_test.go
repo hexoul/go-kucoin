@@ -28,26 +28,6 @@ func TestGetTicker(t *testing.T) {
 	}
 }
 
-func TestListAccounts(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
-	if accounts, err := k.ListAccounts("", ""); err != nil {
-		t.Fatal(err)
-	} else {
-		for _, v := range accounts {
-			t.Log(v)
-		}
-	}
-}
-
-func TestGetDepositList(t *testing.T) {
-	k := New(APIKey, SecretKey, Passphrase)
-	if depositList, err := k.GetDepositList("", ""); err != nil {
-		t.Fatal(err)
-	} else {
-		t.Logf("%v\n", depositList)
-	}
-}
-
 func TestListMergedDealtOrders(t *testing.T) {
 	k := New(APIKey, SecretKey, Passphrase)
 	if ret, err := k.ListMergedDealtOrders("ETH-USDT", "BUY", 20, 1, 0, 0); err != nil {
