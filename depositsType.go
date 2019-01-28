@@ -10,8 +10,8 @@ type Deposit struct {
 	IsInner    string `json:"isInner"`
 	WalletTxID string `json:"walletTxId"`
 	Status     string `json:"status"`
-	CreatedAt  string `json:"createdAt"`
-	UpdatedAt  string `json:"updatedAt"`
+	CreatedAt  int64  `json:"createdAt"`
+	UpdatedAt  int64  `json:"updatedAt"`
 }
 
 // DepositList struct

@@ -7,14 +7,18 @@
 
 ```golang
 import (
-	"github.com/hexoul/go-kucoin"
+	kucoin "github.com/hexoul/go-kucoin"
 )
 
 func main() {
 	// Set your own API key, secret and passphrase
 	k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
 	// Call resource
-	k.ListAccounts("", "")
+  k.ListAccounts(nil)
+  // Call resource with option
+	k.ListAccounts(&kucoin.Options{
+    Currency: "BTC",
+  })
 }
 ```
 
@@ -26,7 +30,7 @@ func main() {
   const (
     APIKey     = "YOUR_API_KEY"
     SecretKey  = "YOUR_SECRET_KEY"
-	Passphrase = "YOUR_PASSPHRASE"
+    Passphrase = "YOUR_PASSPHRASE"
   )
   ```
 
@@ -38,7 +42,8 @@ func main() {
 | ---------| ------------ | ---- | ---- |
 | User | List accounts | Auth | ✔ |
 | User | Get holds | Auth | ✔ |
-| User | Deposit list | Auth | ✔ |
+| User | List deposits | Auth | ✔ |
+| User | List fills | Auth | ✔ |
 | Market Data | Ticker | Open | ✔ |
 | Others | Time | Open | ✔ |
 

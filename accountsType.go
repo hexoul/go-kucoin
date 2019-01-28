@@ -6,8 +6,8 @@ type Hold struct {
 	HoldAmount string `json:"holdAmount"`
 	BizType    string `json:"bizType"`
 	OrderID    string `json:"orderId"`
-	CreatedAt  string `json:"createdAt"`
-	UpdatedAt  string `json:"updatedAt"`
+	CreatedAt  int64  `json:"createdAt"`
+	UpdatedAt  int64  `json:"updatedAt"`
 }
 
 // HoldList struct
