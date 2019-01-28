@@ -12,7 +12,7 @@ import (
 
 func main() {
   // Set your own API key, secret and passphrase
-  k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
+  k := kucoin.GetInstanceWithKey("API_KEY", "API_SECRET", "API_PASSPHRASE")
   // Call resource
   k.ListAccounts(nil)
   // Call resource with option
