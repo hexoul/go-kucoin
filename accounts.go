@@ -3,24 +3,16 @@ package kucoin
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // ListAccounts get a list of accounts.
 // doc: https://docs.kucoin.com/#list-accounts
-func (c *Client) ListAccounts(currency, accountType string) (ret []Account, err error) {
+func (c *Client) ListAccounts(options *Options) (ret []Account, err error) {
 	timestamp, err := c.Time()
 	if err != nil {
 		return
 	}
-	payload := make(map[string]string)
-	if currency != "" {
-		payload["currency"] = strings.ToUpper(currency)
-	}
-	if accountType == "main" || accountType == "trade" {
-		payload["type"] = accountType
-	}
-	r, err := c.do("GET", "/api/v1/accounts", payload, true, timestamp)
+	r, err := c.do("GET", "/api/v1/accounts", parseOptions(options), true, timestamp)
 	if err != nil {
 		return
 	}

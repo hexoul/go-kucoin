@@ -1,33 +1,14 @@
 package kucoin
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	b64 "encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
 	"time"
 )
-
-func doReq(req *http.Request) (body []byte, err error) {
-	requestTimeout := time.Duration(5 * time.Second)
-	client := &http.Client{
-		Timeout: requestTimeout,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if body, err = ioutil.ReadAll(resp.Body); err != nil {
-		return nil, err
-	}
-	return
-}
 
 // do prepare and process HTTP request to Kucoin API.
 /*
@@ -86,12 +67,6 @@ func (c *Client) do(method, resource string, payload map[string]string, authNeed
 	}
 
 	return doReq(req)
-}
-
-func computeHmac256(message string, secret []byte) []byte {
-	h := hmac.New(sha256.New, secret)
-	h.Write([]byte(message))
-	return h.Sum(nil)
 }
 
 func (c *Client) sign(method, resource, queryString string, nonce int64) (signature string) {

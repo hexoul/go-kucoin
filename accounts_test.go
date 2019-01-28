@@ -7,7 +7,7 @@ import (
 
 func TestListAccounts(t *testing.T) {
 	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
-	if accounts, err := k.ListAccounts("", ""); err != nil {
+	if accounts, err := k.ListAccounts(nil); err != nil {
 		t.Fatal(err)
 	} else {
 		for _, v := range accounts {
