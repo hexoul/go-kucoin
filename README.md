@@ -7,16 +7,16 @@
 
 ```golang
 import (
-	kucoin "github.com/hexoul/go-kucoin"
+  kucoin "github.com/hexoul/go-kucoin"
 )
 
 func main() {
-	// Set your own API key, secret and passphrase
-	k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
-	// Call resource
+  // Set your own API key, secret and passphrase
+  k := kucoin.New("API_KEY", "API_SECRET", "API_PASSPHRASE")
+  // Call resource
   k.ListAccounts(nil)
   // Call resource with option
-	k.ListAccounts(&kucoin.Options{
+  k.ListAccounts(&kucoin.Options{
     Currency: "BTC",
   })
 }
