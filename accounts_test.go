@@ -20,7 +20,7 @@ func TestListAccounts(t *testing.T) {
 
 func TestGetHolds(t *testing.T) {
 	k := GetInstanceWithKey(APIKey, SecretKey, Passphrase)
-	if holds, err := k.GetHolds("5c45748cef83c7101c066906"); err != nil {
+	if holds, err := k.GetHolds("5c50482aef83c7652ab1a8d4"); err != nil {
 		t.Fatal(err)
 	} else {
 		for _, v := range holds {

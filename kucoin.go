@@ -14,9 +14,9 @@ const (
 	// v1
 	// kucoinURL = "https://api.kucoin.com/v1/"
 	// v2
-	// kucoinURL = "https://openapi-v2.kucoin.com"
+	kucoinURL = "https://openapi-v2.kucoin.com"
 	// sandbox
-	kucoinURL = "https://openapi-sandbox.kucoin.com"
+	// kucoinURL = "https://openapi-sandbox.kucoin.com"
 )
 
 // Client struct

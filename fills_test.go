@@ -10,7 +10,7 @@ func TestListFills(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		for _, v := range ret {
-			t.Log(v.Symbol, v.OrderID, v.TradeID)
+			t.Log(v.Symbol, v.OrderID, v.TradeID, v.Funds)
 		}
 	}
 }
